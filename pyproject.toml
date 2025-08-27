@@ -1,0 +1,20 @@
+[project]
+name = "qm-data"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "W1ck3d",email = "stefanmoser1991@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "pandas (>=2.3.2,<3.0.0)"
+]
+
+[tool.poetry]
+packages = [{include = "qm_data", from = "src"}]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
