@@ -157,7 +157,9 @@ def agents_with_orders():
 
     order_file = fl.load_file("Auftragsdatei auswählen.")
     df_orders = pd.read_csv(order_file, sep=";", encoding='windows-1252', header=None, low_memory=False)
-    orders = orders_before_week(df_orders, '202536', 'Nummer', 'Name', 'Abgleich')
+    
+    week = input("Versionswechsel im Format JJJJWW eingeben.")
+    orders = orders_before_week(df_orders, week, 'Nummer', 'Name', 'Routierung_Zustellwoche')
     orders_list = list(orders.keys())
 
     df = filter_by_column(df, 'Sendungen', ['Sendungen Total'])
