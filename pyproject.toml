@@ -9,7 +9,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "pandas (>=2.3.2,<3.0.0)",
-    "qm-buildings @ git+https://github.com/V1ct0ryIsMyD3st1ny/qm_buildings.git"
+    "qm-buildings @ git+https://github.com/V1ct0ryIsMyD3st1ny/qm_buildings.git@main"
 ]
 
 [tool.poetry]

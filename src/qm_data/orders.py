@@ -79,11 +79,14 @@ def filter_by_column(df, row_label, filter_values):
     return df
 
 
-def accumulate_rows(df, index_label, accumulate_label):
+def accumulate_rows(df, index_label, accumulate_label, changed_sectors):
     accumulate = {}
     for agent in set(df[index_label].to_list()):
         df_agent = df[df[index_label] == agent]
-        accumulate[agent] = df_agent[accumulate_label].to_list()
+        agent_sectors = df_agent[accumulate_label].to_list()
+        agent_changed_sectors = [sector for sector in agent_sectors if sector in changed_sectors]
+        accumulate[agent] = agent_changed_sectors
+        
     return accumulate
     
     
@@ -143,7 +146,7 @@ def create_export(agents_info, agent_label, excluded_agents, agents_with_sectors
     order_nr_list = [f"Auftrag_{i}" for i in range(max_order)]
     order_name_list = [f"Auftragsname_{i}" for i in range(max_order)]
     order_list = [item for pair in zip(order_nr_list, order_name_list) for item in pair]
-    header = info_list + sector_list + order_list + order_name_list
+    header = info_list + sector_list + order_list
     export = pd.DataFrame.from_records(records)
     export = export[header]
     return export
@@ -158,7 +161,7 @@ def agents_with_orders():
     order_file = fl.load_file("Auftragsdatei auswählen.")
     df_orders = pd.read_csv(order_file, sep=";", encoding='windows-1252', header=None, low_memory=False)
     
-    week = input("Versionswechsel im Format JJJJWW eingeben.")
+    week = input("Versionswechsel im Format JJJJWW eingeben:")
     orders = orders_before_week(df_orders, week, 'Nummer', 'Name', 'Routierung_Zustellwoche')
     orders_list = list(orders.keys())
 
@@ -175,7 +178,10 @@ def agents_with_orders():
     sectors_with_orders = rows_with_values(df_order)
 
     df_agents = df[['Zusteller', 'ZGB-PLZ']]
-    agents_with_sectors = accumulate_rows(df_agents, 'Zusteller', 'ZGB-PLZ')
+    changed_sectors_file = fl.load_file("Angepasste ZGB auswählen.")
+    changed_sectors_df = pd.read_csv(changed_sectors_file, sep=";", encoding='windows-1252', header=0, low_memory=False)
+    changed_sectors_list = changed_sectors_df['ZGB-PLZ'].to_list()
+    agents_with_sectors = accumulate_rows(df_agents, 'Zusteller', 'ZGB-PLZ', changed_sectors_list)
 
     agents_info = ['Zusteller', 'Anrede', 'Vorname', 'Name']
     df_agents_info = df[agents_info]
