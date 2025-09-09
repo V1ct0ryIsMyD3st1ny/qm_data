@@ -28,8 +28,8 @@ def copy_row(df, row_copy_from, row_copy_to, start_column):
     index_copy_to = df.index[match_copy_to][0]
     column_start = df.columns[match_start][0]
     
-    df.iloc[index_copy_to, column_start:] = df.iloc[index_copy_from, column_start:]
-    df = df.iloc[index_copy_to:, :]
+    df.loc[index_copy_to, column_start:] = df.loc[index_copy_from, column_start:]
+    df = df.loc[index_copy_to:, :]
     return df
 
 
@@ -164,7 +164,6 @@ def agents_with_orders():
     week = input("Versionswechsel im Format JJJJWW eingeben:")
     orders = orders_before_week(df_orders, week, 'Nummer', 'Name', 'Routierung_Zustellwoche')
     orders_list = list(orders.keys())
-
     df = filter_by_column(df, 'Sendungen', ['Sendungen Total'])
     df = filter_by_column(df, 'Auftragsnummer', orders_list)
     df = copy_row(df, 'Auftragsnummer', 'Depot', 'Sendungen Total')
@@ -172,7 +171,6 @@ def agents_with_orders():
     df = df.iloc[1:, :]
     df.columns = header
     df = df[~df["Depot"].isin(['60','61', '62', '63', '64'])]
-
 
     df_order = orders_per_sector(df, 'ZGB-PLZ', orders_list)
     sectors_with_orders = rows_with_values(df_order)
