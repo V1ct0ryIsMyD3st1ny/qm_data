@@ -2,6 +2,7 @@ import qm_buildings.file_loader as fl
 import pandas as pd
 from collections import defaultdict
 from dataclasses import dataclass, field
+from qm_data import export_routierung
 
 
 @dataclass
@@ -16,7 +17,7 @@ class volume_config:
     order_row: int = 6
     order_col: int = 24
     
-    agent_columns: list[str] = field(default_factory=lambda: ['Name', 'Vorname', 'Anrede'])
+    agent_columns: list[str] = field(default_factory=lambda: ['Name', 'Vorname', 'Anrede', 'Sprache', 'E-Mail'])
     
 
 def read_volume(filepath: str) -> pd.DataFrame:
@@ -53,7 +54,7 @@ def cleanup_volume(volume: pd.DataFrame, changed_sectors: list[str], config: vol
     """
     header_row = config.info_row
     first_order_row, first_order_column = config.order_row, config.order_col
-    # Lower rows by one since volume was importet with first row as header.
+    # Lower rows by one since volume was imported with first row as header.
     header_row -= 1
     first_order_row -= 1
     # Use the cells containing the agent_info and the orders.
@@ -70,6 +71,14 @@ def cleanup_volume(volume: pd.DataFrame, changed_sectors: list[str], config: vol
     # Fill in 0 for NA-values to sum over later.
     volume.fillna('0', inplace=True)
     return volume
+
+
+def read_quelle(filepath: str, config: volume_config) -> pd.DataFrame:
+    df = pd.read_excel(filepath, sheet_name='Zustellerdatenbank', header=0, dtype='string',)
+    df.set_index('Nummer', inplace=True)
+    header = [col for col in list(df) if col in config.agent_columns]
+    df = df[header]
+    return df
 
 
 def add_sectors_to_agents(volume: pd.DataFrame, config: volume_config) -> list[dict[str, str]]:
@@ -90,10 +99,6 @@ def add_sectors_to_agents(volume: pd.DataFrame, config: volume_config) -> list[d
     for agent in set(volume.index.to_list()):
         info = {'Zusteller': agent}
         df = volume.loc[[agent]]
-        # Use the first occurence of agent to read the personal data.
-        first_row = df.iloc[0]
-        for column in config.agent_columns:
-            info[column] = first_row[column]
         # Create a list of all sectors and corresponding columns.
         sectorPLZ = df.loc[:, 'ZGB-PLZ'].to_list()
         depotNumbers = df.loc[:, 'Depot'].to_list()
@@ -134,11 +139,11 @@ def import_moved_orders(filepath: str, week: str) -> list[list[str]]:
     df = df[df['Routierung_Zustellwoche'] < week]
     # Loop through all orders and consider order numbers and names.
     for i in df.index:
-        number = df.loc[i, 'Auftragsnummer']
+        number = df.loc[i, 'Nummer']
         # If order was not alredy found append it to orders.
         if number not in foundNumbers:
             foundNumbers.add(number)
-            name = df.loc[i, 'Auftragsname']
+            name = df.loc[i, 'KontoFirma']
             orders.append([number, name])
     return orders
 
@@ -263,6 +268,9 @@ def create_report() -> None:
     """User selects Volumenauwertung, Auftragsdatei, ZGB-Datei, Woche des Versionswechsel.
     Create Report of all Zusteller with their changed ZGB that have moved orders.
     """
+    generateReport = input("Möchtest du vorher die Routierungsdatei erstellen (J/N)? [N] ")
+    if generateReport == "J":
+        export_routierung.create_report()
     # Let user select all required files and the week.
     volumenauswertung = fl.load_file('Volumenauswertung auswählen')
     zgb_datei = fl.load_file('ZGB-Datei auswählen')
@@ -284,9 +292,17 @@ def create_report() -> None:
     # Example: Agent X has sectors A and B, A has order {1, 2} and B has orders {2, 3}.
     # Then agent X has orders {1, 2, 3}.
     agents = assgin_orders_to_agents(agents, orders)
-    # Create the correct header and order agents accordingly.
-    header = create_header(agents, config)
+    # Create a dataframe with the agents records.
     df = pd.DataFrame(agents)
+    if df.empty:
+        raise ValueError("Keine Daten für diese Woche verhanden.")
+    # Load the Quelle Mutationsliste to extract the agent info
+    quelle_path = fl.load_file('Quelle Mutationsliste auswählen', (("Excel-File", "*.xlsx"),))
+    quelle = read_quelle(quelle_path, config)
+    # Merge the agent info to the dataframe
+    df = pd.merge(left=df, right=quelle, left_on='Zusteller', right_index=True)
+    # Rearrange the dataframe
+    header = create_header(agents, config)
     df = df[header]
     # Let user choose a path to save the report and save it.
     saveas_path = fl.save_file('Export-Datei speichern')

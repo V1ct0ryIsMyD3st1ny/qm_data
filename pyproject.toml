@@ -9,7 +9,10 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "pandas (>=2.3.2,<3.0.0)",
-    "qm-buildings @ git+https://github.com/V1ct0ryIsMyD3st1ny/qm_buildings.git@main"
+    "qm-buildings @ git+https://github.com/V1ct0ryIsMyD3st1ny/qm_buildings.git@main",
+    "pywin32 (>=311,<312)",
+    "beautifulsoup4 (>=4.14.1,<5.0.0)",
+    "openpyxl (>=3.1.5,<4.0.0)"
 ]
 
 [tool.poetry]
