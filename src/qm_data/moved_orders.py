@@ -309,7 +309,7 @@ def create_report() -> None:
     options = {
         'sep': ';',
         'index': False,
-        'encoding': 'windows-1252'
+        'encoding': 'utf-8-sig'
     }
     df.to_csv(saveas_path, **options)
     
